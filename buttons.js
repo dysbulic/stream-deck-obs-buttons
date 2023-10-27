@@ -10,6 +10,10 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 
+const setup = JSON.parse(fs.readFileSync(
+  new URL('package.json', import.meta.url).pathname, 'utf-8'
+))
+
 const stripHome = (path) => (
   path.replace(new RegExp(`^${os.homedir()}`), '~')
 )
@@ -24,12 +28,22 @@ const defaults = {
   recordingOffIcon: (
     stripHome(new URL('recording-off.gif', import.meta.url).pathname)
   ),
+  streamingOnIcon: (
+    stripHome(new URL('streaming-on.svg', import.meta.url).pathname)
+  ),
+  streamingOffIcon: (
+    stripHome(new URL('streaming-off.svg', import.meta.url).pathname)
+  ),
   errorIcon: (
     stripHome(new URL('error-icon.gif', import.meta.url).pathname)
   ),
   recordingButtonPage: null,
   recordingButtonIndex: 9,
-  config: path.join('~', '.config', 'stream-deck-obs-button', 'config.json5'),
+  streamingButtonPage: null,
+  streamingButtonIndex: 10,
+  config: path.join(
+    '~', '.config', setup.name, 'config.json5'
+  ),
 }
 
 const configArgs = (
@@ -112,38 +126,38 @@ const args = (
   })
   .option('streaming-on-icon', {
     type: 'string',
-    default: defaults.streamingOn,
-    alias: 's',
+    default: defaults.streamingOnIcon,
+    alias: 'O',
     description: 'Icon to use when streaming.'
   })
   .option('streaming-off-icon', {
     type: 'string',
-    default: defaults.streamingOff,
-    alias: 'n',
+    default: defaults.streamingOffIcon,
+    alias: 'F',
     description: 'Icon to use when streaming is stopped.'
+  })
+  .option('streaming-error-icon', {
+    type: 'string',
+    default: defaults.streamingErrorIcon ?? defaults.errorIcon,
+    alias: 'E',
+    description: 'Icon to use when something goes wrong.'
   })
   .option('streaming-button-page', {
     type: 'number',
     default: defaults.streamingButtonPage,
-    alias: 'g',
+    alias: 'P',
     description: 'Which page to put the streaming button on.'
   })
   .option('streaming-button-index', {
     type: 'number',
     default: defaults.streamingButtonIndex,
-    alias: 'b',
+    alias: 'I',
     description: 'Streaming button position.'
-  })
-  .option('streaming-error-icon', {
-    type: 'string',
-    default: defaults.streamingErrorIcon ?? defaults.errorIcon,
-    alias: 'r',
-    description: 'Icon to use when something goes wrong.'
   })
   .option('error-icon', {
     type: 'string',
     default: defaults.errorIcon,
-    alias: 'E',
+    alias: 'r',
     description: 'Backup icon to use when something goes wrong.'
   })
   .option('config', {
@@ -158,45 +172,89 @@ const args = (
     alias: 'v',
     description: 'Print more information.'
   })
+  .option('very-verbose', {
+    type: 'boolean',
+    default: false,
+    alias: 'w',
+    description: 'Print even more information.'
+  })
   .alias('h', 'help')
   .help()
   .showHelpOnFail(true, 'HELP!')
 ) 
 const argv = await args.argv
 
-const setStatus = (status) => {
-  let args = [
-    '--action', 'set_icon',
-    '--button', String(argv.recordingButtonIndex - 1),
-  ]
-  if(argv.recordingButtonPage != null) {
-    args.push('--page', String(argv.recordingButtonPage - 1))
-  }
+if(argv.veryVerbose) {
+  console.debug({ argv })
+  argv.verbose = true
+}
 
-  switch(status) {
-    case true: case 'recording': {
-      args.push('--icon', argv.recordingOnIcon,)
+const deckcli = (action, type, opts) => {
+  const capType = type[0].toUpperCase() + type.slice(1)
+  const args = [
+    '--action', action,
+    '--button', String(argv[`${type}ButtonIndex`] - 1),
+  ]
+  if(argv[`${type}ButtonPage`] != null) {
+    args.push('--page', String(argv[`${type}ButtonPage`] - 1))
+  }
+  switch(action) {
+    case 'set_cmd': {
+      const program = new URL(import.meta.url).pathname
+      const shortArgs = (
+        Object.entries(argv).filter(([k, v]) => (
+          k.length === 1 && k !== '_' && v != null
+        ))
+      )
+      const argPairs = shortArgs.map(([k, v]) => `-${k} "${v}"`)
+      const cmd = `${program} ${argPairs.join(' ')}`
+      args.push('--command', `${cmd} ${type[0]}toggle`)
       break
     }
-    case false: case 'stopped': {
-      args.push('--icon', argv.recordingOffIcon)
+    case 'set_text': {
+      args.push(
+        '--text',
+        opts.time?.replace(/\.\d+$/, '')
+        ?? opts.text?.replace(/ing$/g, '')
+        ?? ''
+      )
       break
     }
-    case null: case 'error': {
-      args.push('--icon', argv.recordingErrorIcon ?? argv.errorIcon)
-      break
-    }
-    default: {
-      throw new Error(`Unknown Status: ${status}`)
+    case 'set_icon': {
+      switch(opts.status) {
+        case true: case 'recording': case 'streaming': {
+          args.push('--icon', argv[`${type}OnIcon`])
+          break
+        }
+        case false: case 'stopped': {
+          args.push('--icon', argv[`${type}OffIcon`])
+          deckcli('set_text', type, { text: `OBS\n${capType}` })
+          break
+        }
+        case null: case 'error': {
+          args.push('--icon', argv[`${type}ErrorIcon`] ?? argv.errorIcon)
+          break
+        }
+        default: {
+          throw new Error(`Unknown ${capType} Status: ${opts.status}`)
+        }
+      }
     }
   }
   if(argv.verbose) {
-    console.log(
+    console.debug(
       chalk.cyan('Executing: ')
-      + chalk.hex('#C75700')(`streamdeckc ${args.join(' ')}`)
+      + chalk.green(`streamdeckc ${args.join(' ')}`)
     )
   }
   spawnSync('streamdeckc', args)
+}
+
+const setRecordingStatus = (status) => {
+  deckcli('set_icon', 'recording', { status })
+}
+const setStreamingStatus = (status) => {
+  deckcli('set_icon', 'streaming', { status })
 }
 
 const obs = new OBSWebSocket()
@@ -208,37 +266,20 @@ try {
     chalk.red('Error connecting to OBS: ')
     + chalk.yellow(err.message)
   )
-  setStatus('error')
+  setRecordingStatus('error')
+  setStreamingStatus('error')
   process.exit(1)
 }
 
 const { outputActive: recording } = await obs.call('GetRecordStatus')
-await setStatus(recording)
+await setRecordingStatus(recording)
+const { outputActive: streaming } = await obs.call('GetStreamStatus')
+await setStreamingStatus(streaming)
 
-const program = new URL(import.meta.url).pathname
-const shortArgs = (
-  Object.entries(argv).filter(([k, v]) => (
-    k.length === 1 && k !== '_' && v != null
-  ))
-)
-const argPairs = shortArgs.map(([k, v]) => `-${k} "${v}"`)
-const cmd = `${program} ${argPairs.join(' ')}`
-const cmdArgs = [
-  '--action', 'set_cmd',
-  '--button', String(argv.recordingButtonIndex - 1),
-  '--command', `${cmd} rtoggle`,
-]
-if(argv.recordingButtonPage != null) {
-  cmdArgs.push('--page', String(argv.recordingButtonPage - 1))
-}
-if(argv.verbose) {
-  console.debug(
-    chalk.cyan('Executing: ')
-    + chalk.green(`streamdeckc ${cmdArgs.join(' ')}`)
-  )
-}
-spawnSync('streamdeckc', cmdArgs)
+deckcli('set_cmd', 'recording')
+deckcli('set_cmd', 'streaming')
 
+let interval = null
 for(const command of argv._) {  
   if(argv.verbose) {
     console.log(
@@ -250,23 +291,41 @@ for(const command of argv._) {
   switch(command) {
     case 'watch': {
       obs.on('RecordStateChanged', ({ outputActive }) => {
-        setStatus(outputActive)
+        setRecordingStatus(outputActive)
       })
+      obs.on('StreamStateChanged', ({ outputActive }) => {
+        setStreamingStatus(outputActive)
+      })
+      interval = setInterval(async () => {
+        const { outputActive: recording, outputTimecode: rTime } = (
+          await obs.call('GetRecordStatus')
+        )
+        if(recording) {
+          deckcli('set_text', 'recording', { time: rTime })
+        }
+
+        const { outputActive: streaming, outputTimecode: sTime } = (
+          await obs.call('GetStreamStatus')
+        )
+        if(streaming) {
+          deckcli('set_text', 'streaming', { time: sTime })
+        }
+      }, 1250)
       break
     }
     case 'rstart': {
       await obs.call('StartRecord')
-      setStatus('recording')
+      setRecordingStatus('recording')
       break
     }
     case 'rstop': {
       await obs.call('StopRecord')
-      setStatus('stopped')
+      setRecordingStatus('stopped')
       break
     }
     case 'rtoggle': {
       await obs.call('ToggleRecord')
-      setStatus(!recording)
+      setRecordingStatus(!recording)
       if(argv.verbose) {
         console.log(
           chalk.blue('Recording: ')
@@ -274,6 +333,31 @@ for(const command of argv._) {
             !recording ? '#00B672' : '#FF2442'
           )(
             !recording ? 'On' : 'Off'
+          )
+        )
+      }
+      break
+    }
+    case 'sstart': {
+      await obs.call('StartStream')
+      setStreamingStatus('streaming')
+      break
+    }
+    case 'sstop': {
+      await obs.call('StopStream')
+      setStreamingStatus('stopped')
+      break
+    }
+    case 'stoggle': {
+      await obs.call('ToggleStream')
+      setStreamingStatus(!streaming)
+      if(argv.verbose) {
+        console.log(
+          chalk.blue('Streaming: ')
+          + chalk.hex(
+            !streaming ? '#00B672' : '#FF2442'
+          )(
+            !streaming ? 'On' : 'Off'
           )
         )
       }

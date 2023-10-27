@@ -1,11 +1,14 @@
 {
-  "name": "streamdeck-obs-button",
-  "version": "0.1.0",
-  "description": "A dynamic OBS record button for streamdeck-linux-gui",
-  "main": "button.js",
+  "name": "stream-deck-obs-buttons",
+  "version": "0.8.0",
+  "description": "Dynamic OBS buttons for `streamdeck-linux-gui`",
+  "main": "buttons.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "stream-deck-obs-buttons": "buttons.js"
   },
   "author": "dysbulic",
   "license": "CC0-1.0",
