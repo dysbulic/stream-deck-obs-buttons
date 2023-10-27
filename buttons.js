@@ -193,9 +193,11 @@ const deckcli = (action, type, opts) => {
   const capType = type[0].toUpperCase() + type.slice(1)
   const args = [
     '--action', action,
+    // @ts-ignore
     '--button', String(argv[`${type}ButtonIndex`] - 1),
   ]
   if(argv[`${type}ButtonPage`] != null) {
+    // @ts-ignore
     args.push('--page', String(argv[`${type}ButtonPage`] - 1))
   }
   switch(action) {
@@ -247,7 +249,14 @@ const deckcli = (action, type, opts) => {
       + chalk.green(`streamdeckc ${args.join(' ')}`)
     )
   }
-  spawnSync('streamdeckc', args)
+  const { output, status } = spawnSync('streamdeckc', args)
+  if(status !== 0) {
+    console.error(
+      chalk.red(`Error Executing: (${status})\n`)
+      + chalk.yellow(output.join("\n"))
+    )
+    process.exit(1)
+  }
 }
 
 const setRecordingStatus = (status) => {

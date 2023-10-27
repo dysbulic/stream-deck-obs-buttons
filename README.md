@@ -8,10 +8,10 @@ This project combines [OBS's websocket interface](https://github.com/obsproject/
 
 **_(This program relies on a new feature in `streamdeck-linux-gui`, a control system via Unix socket called `streamdeckc`. At the time of this writing it is not included in the distribution packages & to use it one must [install from source](https://github.com/streamdeck-linux-gui/streamdeck-linux-gui/blob/main/docs/installation/source.md).)_**
 
-To have the program monitor OBS and control states, run:
+To have the program monitor OBS and control states *(with logging)*, run:
 
 ```bash
-npx stream-deck-obs-buttons watch
+npx stream-deck-obs-buttons watch -v
 ```
 
 Running it with the `--help` flag will publish a list of available options:
