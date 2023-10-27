@@ -1,14 +1,14 @@
 # Linux Stream Deck Dynamic OBS Recording and Streaming Buttons
 
-This project combines [OBS's websocket interface](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md) with [`streamdeck-linux-gui`](https://github.com/streamdeck-linux-gui/streamdeck-linux-gui) to drive a button whose image changes with the recording state & which toggles the recording state when pushed.
+This project combines [OBS's websocket interface](https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md) with [`streamdeck-linux-gui`](https://github.com/streamdeck-linux-gui/streamdeck-linux-gui) to drive a buttons whose images change with the recording and streaming states & which toggles the appropriate state when pushed.
 
-[Stream Deck Demo.webm](https://github.com/dysbulic/stream-deck-obs-buttons/assets/181523/9136efeb-ffca-4125-82ec-be954a98fcfc)
+[Stream Deck Demo Video](https://github.com/dysbulic/stream-deck-obs-buttons/assets/181523/9136efeb-ffca-4125-82ec-be954a98fcfc)
 
 ## Use
 
 **_(This program relies on a new feature in `streamdeck-linux-gui`, a control system via Unix socket called `streamdeckc`. At the time of this writing it is not included in the distribution packages & to use it one must [install from source](https://github.com/streamdeck-linux-gui/streamdeck-linux-gui/blob/main/docs/installation/source.md).)_**
 
-To have the program monitor OBS and control the recording state, run:
+To have the program monitor OBS and control states, run:
 
 ```bash
 npx stream-deck-obs-buttons watch

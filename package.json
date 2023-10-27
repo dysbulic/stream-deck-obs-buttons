@@ -1,6 +1,6 @@
 {
   "name": "stream-deck-obs-buttons",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Dynamic OBS buttons for `streamdeck-linux-gui`",
   "main": "buttons.js",
   "type": "module",
