@@ -41,6 +41,7 @@ const defaults = {
   recordingButtonIndex: 9,
   streamingButtonPage: null,
   streamingButtonIndex: 10,
+  streamdeckc: 'streamdeckc',
   config: path.join(
     '~', '.config', setup.name, 'config.json5'
   ),
@@ -65,8 +66,8 @@ const configArgv = await configArgs.argv
 if(fs.existsSync(addHome(defaults.config))) {
   if(configArgv.verbose) {
     console.debug(
-      chalk.cyan('Loading: ')
-      + chalk.green(defaults.config)
+      chalk.hex('#C75700')('Loading: ')
+      + chalk.hex('#CB61F6')(defaults.config)
     )
   }
   const config = (
@@ -160,6 +161,12 @@ const args = (
     alias: 'r',
     description: 'Backup icon to use when something goes wrong.'
   })
+  .option('streamdeckc', {
+    type: 'string',
+    default: defaults.streamdeckc,
+    alias: 's',
+    description: 'Location the `streamdeckc` program.'
+  })
   .option('config', {
     type: 'string',
     default: configArgv.config,
@@ -246,16 +253,16 @@ const deckcli = (action, type, opts) => {
   if(argv.verbose) {
     console.debug(
       chalk.cyan('Executing: ')
-      + chalk.green(`streamdeckc ${args.join(' ')}`)
+      + chalk.green(`${argv.streamdeckc} ${args.join(' ')}`)
     )
   }
-  const { output, status } = spawnSync('streamdeckc', args)
-  if(status !== 0) {
-    console.error(
-      chalk.red(`Error Executing: (${status})\n`)
-      + chalk.yellow(output.join("\n"))
+  const { output, status } = spawnSync(argv.streamdeckc, args)
+  if(status !== 0 || argv.veryVerbose) {
+    console.info(
+      chalk.red('Executed: ')
+      + chalk.bgHex('#7ED75A').hex('#063965')(status)
+      + `  ${chalk.yellow(output?.join("\n  "))}`
     )
-    process.exit(1)
   }
 }
 
