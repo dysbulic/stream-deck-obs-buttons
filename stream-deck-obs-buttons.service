@@ -1,0 +1,10 @@
+[Unit]
+Description=Stream Deck OBS Buttons
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=%u
+ExecStart=/usr/bin/env npx stream-deck-obs-buttons watch

@@ -260,7 +260,7 @@ const deckcli = (action, type, opts) => {
   if(status !== 0 || argv.veryVerbose) {
     console.info(
       chalk.red('Executed: ')
-      + chalk.bgHex('#7ED75A').hex('#063965')(status)
+      + chalk.bgHex('#7ED75A').hex('#063965')(`(${status})`)
       + `  ${chalk.yellow(output?.join("\n  "))}`
     )
   }

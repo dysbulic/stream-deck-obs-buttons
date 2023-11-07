@@ -72,3 +72,23 @@ The JSON5 document can contain the flags from the `--help` section except camel 
   errorIcon: '~/.config/stream-deck-obs-buttons/error-icon.gif',
 }
 ```
+
+## System Service
+
+To have the program run as a system service, first put the service definition in the correct place:
+
+```bash
+cp stream-deck-obs-buttons.service ~/.config/systemd/user/
+```
+
+It can then be started with:
+
+```bash
+systemctl start --user stream-deck-obs-buttons
+```
+
+To have it start automatically, use:
+
+```bash
+systemctl enable --user stream-deck-obs-buttons
+```
